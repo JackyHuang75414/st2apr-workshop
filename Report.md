@@ -14,3 +14,15 @@ An embedded Tomcat runs inside the same JVM, listens on port 8080, and serves th
 
 ### Q 1.11 — After each code change you must restart the application, otherwise the change is not visible. Why?
 The JVM loads a class once and never re-reads the `.class` file, so new bytecode requires a new JVM. The Spring context is also built once at startup (singletons instantiated, routes registered), so a new `@GetMapping` would not even be known. Hence: compile → new JVM → new context.
+
+## Part 2 — Your first endpoint
+
+### Q 2.3 — Which annotations do you need on the class and on the method?
+`@RestController` on the class: the returned value is written to the HTTP response body, as JSON via Jackson. `@GetMapping("/programmers")` on the method binds `GET /programmers` to it.
+Under the hood: at startup `RequestMappingHandlerMapping` registers the route; at each request `DispatcherServlet` looks it up and invokes the method.
+
+### Q 2.4 — Why is putting the code in the main method a bad idea?
+`main()` only bootstraps the application. Code placed there has no routing (one URL at best), cannot be tested without starting the whole app, mixes concerns (it violates the single responsibility), and every new endpoint would mean editing and restarting the entry point.
+
+### Q 2.7 — Your method returns Java objects, yet the browser shows JSON. Who did the conversion, and when?
+Spring Boot's HTTP message converters, with Jackson behind them: `MappingJackson2HttpMessageConverter` serialises the returned `List<Programmer>` when the response is written, using the getters of the objects.
