@@ -1,18 +1,32 @@
 package st2apr.workshop.model;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+
 import java.math.BigDecimal;
 
+@Entity
 public class Programmer {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false, length = 100)
     private String lastName;
+
+    @Column(nullable = false, length = 100)
     private String firstName;
+
     private String address;
     private String expertiseLanguage;
     private String favoriteBook;
     private BigDecimal salary;
 
-    public Programmer() {
+    protected Programmer() {
     }
 
     public Programmer(Long id, String lastName, String firstName, String address,
