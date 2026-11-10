@@ -27,6 +27,37 @@ Under the hood: at startup `RequestMappingHandlerMapping` registers the route; a
 ### Q 2.7 — Your method returns Java objects, yet the browser shows JSON. Who did the conversion, and when?
 Spring Boot's HTTP message converters, with Jackson behind them: `MappingJackson2HttpMessageConverter` serialises the returned `List<Programmer>` when the response is written, using the getters of the objects.
 
+## Part 3 — Persistence: MariaDB, JPA and the layered architecture
+
+### Q 3.1 — Before configuring anything, restart: what is Spring Boot trying to do that it could not?
+It fails with `Failed to configure a DataSource: 'url' attribute is not specified and no embedded datasource could be configured`. Adding the starter put `DataSourceAutoConfiguration` and Hibernate on the classpath, and they immediately try to build a connection pool — but nobody told them where the database is. A starter is not just a jar: it activates a whole subsystem through auto-configuration, while the configuration itself (URL, credentials) stays our responsibility.
+
+### Q 3.2 — Where does `jakarta.persistence` come from? Which dependency? Why not `javax`?
+It is the Jakarta Persistence API, brought transitively by `spring-boot-starter-data-jpa`. Since Jakarta EE 9 the `javax.*` packages were renamed to `jakarta.*`, and Spring Boot 3 (and 4) use the Jakarta namespace — so tutorials that import `javax.persistence` target Spring Boot 2.x.
+
+### Q 3.3 — Difference between the POJO and the entity? Which table and columns for `lastName` and `favoriteBook`?
+The POJO is a plain class; the entity is mapped to a table and managed by Hibernate (its state is tracked, it can be persisted, merged, deleted). `lastName` maps to `programmer.last_name` and `favoriteBook` to `programmer.favorite_book` through the default physical naming strategy (camelCase → snake_case). No `@Table` is needed because the table name defaults to the entity name (`Programmer` → `programmer`), and no `@Column(name = ...)` because the column name defaults to the attribute name.
+
+### Q 3.4 — The repository interface has no body and no implementation. Where do `findAll()`, `save()`… come from?
+They are declared by `JpaRepository`. At startup Spring Data scans the interface, generates a proxy that implements it (delegating to `SimpleJpaRepository`), and registers it as a bean — that is the object injected into the service.
+
+### Q 3.5 — What does `@Service` bring? Why constructor injection instead of `@Autowired` on a field?
+`@Service` is a specialisation of `@Component`: it declares a bean and documents the intent (business layer) — unlike `@RestController` (web layer, `@Controller` + `@ResponseBody`) and `@Repository` (persistence, with exception translation). Constructor injection makes the dependency `final` and mandatory, keeps it visible in the signature, and lets a test pass a fake without Spring; a field `@Autowired` hides the dependency and prevents `final`.
+
+### Q 3.6 — Path of a request; which layer must never know HTTP? Which must never write SQL?
+`GET /programmers/3` → `ProgrammerController.getProgrammer(3)` → `ProgrammerService.findById(3)` → `ProgrammerRepository.findById(3)` → Hibernate → MariaDB, then back the same way. The **service** and the **repository** must never know about HTTP; the **controller** and the **service** must never write SQL.
+
+## Part 4 — Full CRUD
+
+### Q 4.1 — Advantages and risks of `@RequestMapping` at class level?
+The base path is written once: changing it (or versioning it as `/api/v1`) touches one line, and each method only shows its own part of the path. The risk is that the full URL becomes invisible when reading a single method, and deep nesting (`/{id}/batches/{batchId}`) quickly becomes hard to follow.
+
+### Q 4.2 — PUT vs PATCH; which one fits here?
+`PUT` replaces the whole representation of the resource: sending the same request twice leaves the server in the same state (idempotent). `PATCH` modifies only part of it. The client sends the complete programmer, so `PUT` is the right verb here.
+
+### Q 4.3 — `@Transactional`: on which methods, what does it do, why does it matter most for update?
+On the service methods that write and may touch several rows (create, update, delete) — not on the read-only finders, which Spring Data already runs in a read-only transaction. It opens a transaction around the method, commits on success and rolls back on a runtime exception. It matters most for **update** because that method reads then writes: without a transaction the read and the write belong to two different units of work, so a concurrent change can be overwritten between them.
+
 ## Part 5 — REST done right
 
 ### Q 5.1 — Why is this RPC style rather than REST? Rewrite the four routes.
