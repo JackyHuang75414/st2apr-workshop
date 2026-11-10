@@ -26,3 +26,29 @@ Under the hood: at startup `RequestMappingHandlerMapping` registers the route; a
 
 ### Q 2.7 — Your method returns Java objects, yet the browser shows JSON. Who did the conversion, and when?
 Spring Boot's HTTP message converters, with Jackson behind them: `MappingJackson2HttpMessageConverter` serialises the returned `List<Programmer>` when the response is written, using the getters of the objects.
+
+## Part 5 — REST done right
+
+### Q 5.1 — Why is this RPC style rather than REST? Rewrite the four routes.
+RPC puts the action in the URL (`/getProgrammers`, `/addProgrammer`) and uses HTTP as a mere transport. REST exposes resources as plural nouns and lets the HTTP verb carry the action, with the identifier in the path:
+
+| RPC route | REST route |
+|---|---|
+| `GET /getProgrammers` | `GET /programmers` |
+| `POST /addProgrammer` | `POST /programmers` |
+| `POST /deleteProgrammer/3` | `DELETE /programmers/3` |
+| `POST /modifyProgrammer/3` | `PUT /programmers/3` |
+
+Our controller follows these rules: `@RequestMapping("/programmers")` at class level, one verb-specific mapping per action, and the id as a path variable (`@PathVariable`).
+
+### 5.2 — Status codes of the API
+
+| Situation | Status | Body |
+|---|---|---|
+| One or several programmers retrieved | `200 OK` | the programmer(s) as JSON |
+| The requested programmer does not exist | `404 Not Found` | `ProblemDetail` (RFC 9457) |
+| A programmer is created | `201 Created` | the created programmer + `Location` header |
+| A programmer is updated | `200 OK` | the updated programmer |
+| A programmer is deleted | `204 No Content` | none |
+| Update or deletion of a programmer that does not exist | `404 Not Found` | `ProblemDetail` |
+| Invalid data sent by the client (e.g. empty last name) | `400 Bad Request` | `ProblemDetail` (Part 6.4 validation) |
