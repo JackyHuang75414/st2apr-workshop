@@ -114,3 +114,14 @@ Our controller follows these rules: `@RequestMapping("/programmers")` at class l
 ### Q 6.1 — What did you gain? What should an error response never contain?
 Handling "not found" once in `@RestControllerAdvice` means: the controllers stay thin (no `if`, no `ResponseEntity.notFound()`), a new error type costs one method instead of an edit in every endpoint, every client receives the same shape (RFC 9457 `ProblemDetail`), and the status code is decided in a single place.
 An error response must never contain a stack trace, the SQL statement or the database exception, internal class names or server paths — those belong to the logs. The client gets a short, readable message ("Programmer 999 not found"), nothing that maps the internals of the server.
+## Reflection — what actually slowed me down
+
+Three things cost me real time in this workshop.
+
+My IDE kept showing `List.of` and then `org.springframework` in red while Maven compiled the same code without complaining. IntelliJ had decided the language level was 5, and the Maven wrapper was on 3.10, which its importer could not load. I spent more time on the tooling than on the code.
+
+My first `ProgrammerController` looked plausible and did nothing: I had put `@RequestBody` on a method without `@PostMapping`, and `@RequestMapping` on the find-by-id method, so `GET /programmers/1` returned 404 while `GET /programmers?id=1` returned the whole list. Seeing it in the browser made the difference between "an annotation" and "a route" concrete.
+
+I also did not see why the no-argument constructor was required until I understood that Hibernate builds an empty object and fills it field by field. After that the rule stopped feeling arbitrary.
+
+The part I am still least comfortable with is `@Transactional`: I can say what it does, but I have not triggered a real rollback to watch it happen.
