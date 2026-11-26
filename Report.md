@@ -1,5 +1,28 @@
 # ST2APR — Spring Boot workshop — Report
 
+## Question index
+
+The grading grid lists 14 questions (Parts 1–4). The handout numbers two of the Part 4 questions differently, so both numbers are given in the headings below.
+
+| Grading grid | Topic | Answer |
+|---|---|---|
+| Q 1.7 | What the IDE does when starting the application | Q 1.7 |
+| Q 1.8 | Tomcat message, who installed Tomcat | Q 1.8 |
+| Q 1.10 | `@SpringBootApplication`, `SpringApplication.run(...)` | Q 1.10 |
+| Q 1.11 | Why a restart is needed | Q 1.11 |
+| Q 2.3 | Annotations, what happens under the hood | Q 2.3 |
+| Q 2.4 | Why not in `main()` | Q 2.4 |
+| Q 2.7 | Who converts objects to JSON, and when | Q 2.7 |
+| Q 3.1 | Why it fails without configuration, what a starter does | Q 3.1 |
+| Q 3.2 | Origin of `jakarta.persistence` | Q 3.2 |
+| Q 3.3 | POJO vs entity, default table/column mapping | Q 3.3 |
+| Q 3.4 | Where the repository methods come from | Q 3.4 |
+| Q 3.5 | Constructor injection vs field injection | Q 3.5 |
+| Q 4.1 | PUT vs PATCH *(handout: Q 4.2)* | Q 4.1 |
+| Q 4.2 | `@Transactional` *(handout: Q 4.3)* | Q 4.2 |
+
+Extra answers, beyond the grid (Parts 5–6 of the handout): Q 3.6, Q 5.1, Q 6.1.
+
 ## Part 1 — Create and run your project
 
 ### Q 1.7 — What does the IDE do before and while starting the application?
@@ -49,14 +72,14 @@ They are declared by `JpaRepository`. At startup Spring Data scans the interface
 
 ## Part 4 — Full CRUD
 
-### Q 4.1 — Advantages and risks of `@RequestMapping` at class level?
+### Q 4.1 — PUT vs PATCH; which one fits here? *(handout Q 4.2)*
+`PUT` replaces the whole representation of the resource: sending the same request twice leaves the server in the same state (idempotent). `PATCH` modifies only part of it. The client sends the complete programmer, so `PUT` is the right verb here — see `ProgrammerController.updateProgrammer`, which takes the full object in the body and overwrites every field.
+
+### Q 4.2 — `@Transactional`: on which methods, what does it do, why does it matter most for update? *(handout Q 4.3)*
+On the service methods that write and may touch several rows (`create`, `update`, `delete`) — not on the read-only finders, which Spring Data already runs in a read-only transaction. It opens a transaction around the method, commits on success and rolls back on a runtime exception. It matters most for **update** because that method reads then writes: `ProgrammerService.update` first calls `findById`, then `save`. Without a transaction those two calls belong to two different units of work, so a concurrent change can slip in between them.
+
+### Additional — advantages and risks of `@RequestMapping` at class level *(handout Q 4.1, not in the grading grid)*
 The base path is written once: changing it (or versioning it as `/api/v1`) touches one line, and each method only shows its own part of the path. The risk is that the full URL becomes invisible when reading a single method, and deep nesting (`/{id}/batches/{batchId}`) quickly becomes hard to follow.
-
-### Q 4.2 — PUT vs PATCH; which one fits here?
-`PUT` replaces the whole representation of the resource: sending the same request twice leaves the server in the same state (idempotent). `PATCH` modifies only part of it. The client sends the complete programmer, so `PUT` is the right verb here.
-
-### Q 4.3 — `@Transactional`: on which methods, what does it do, why does it matter most for update?
-On the service methods that write and may touch several rows (create, update, delete) — not on the read-only finders, which Spring Data already runs in a read-only transaction. It opens a transaction around the method, commits on success and rolls back on a runtime exception. It matters most for **update** because that method reads then writes: without a transaction the read and the write belong to two different units of work, so a concurrent change can be overwritten between them.
 
 ## Part 5 — REST done right
 
