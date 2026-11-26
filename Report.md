@@ -1,127 +1,125 @@
-# ST2APR — Spring Boot workshop — Report
+# ST2APR Spring Boot Workshop Report
 
 Repository: https://github.com/JackyHuang75414/st2apr-workshop
 
 ## Question index
 
-The grading grid lists 14 questions (Parts 1–4). The handout numbers two of the Part 4 questions differently, so both numbers are given in the headings below.
+The grading grid asks 14 questions for Parts 1 to 4. The handout numbers the last two differently, so both numbers are in the headings below.
 
 | Grading grid | Topic | Answer |
 |---|---|---|
-| Q 1.7 | What the IDE does when starting the application | Q 1.7 |
-| Q 1.8 | Tomcat message, who installed Tomcat | Q 1.8 |
-| Q 1.10 | `@SpringBootApplication`, `SpringApplication.run(...)` | Q 1.10 |
+| Q 1.7 | What the IDE does when starting | Q 1.7 |
+| Q 1.8 | Tomcat message, who installed it | Q 1.8 |
+| Q 1.10 | @SpringBootApplication, run() | Q 1.10 |
 | Q 1.11 | Why a restart is needed | Q 1.11 |
-| Q 2.3 | Annotations, what happens under the hood | Q 2.3 |
-| Q 2.4 | Why not in `main()` | Q 2.4 |
-| Q 2.7 | Who converts objects to JSON, and when | Q 2.7 |
-| Q 3.1 | Why it fails without configuration, what a starter does | Q 3.1 |
-| Q 3.2 | Origin of `jakarta.persistence` | Q 3.2 |
-| Q 3.3 | POJO vs entity, default table/column mapping | Q 3.3 |
-| Q 3.4 | Where the repository methods come from | Q 3.4 |
-| Q 3.5 | Constructor injection vs field injection | Q 3.5 |
-| Q 4.1 | PUT vs PATCH *(handout: Q 4.2)* | Q 4.1 |
-| Q 4.2 | `@Transactional` *(handout: Q 4.3)* | Q 4.2 |
+| Q 2.3 | Annotations, under the hood | Q 2.3 |
+| Q 2.4 | Why not in main() | Q 2.4 |
+| Q 2.7 | Who converts objects to JSON | Q 2.7 |
+| Q 3.1 | Why it fails without configuration | Q 3.1 |
+| Q 3.2 | Where jakarta.persistence comes from | Q 3.2 |
+| Q 3.3 | POJO vs entity, default mapping | Q 3.3 |
+| Q 3.4 | Where repository methods come from | Q 3.4 |
+| Q 3.5 | Constructor injection | Q 3.5 |
+| Q 4.1 | PUT vs PATCH (handout Q 4.2) | Q 4.1 |
+| Q 4.2 | @Transactional (handout Q 4.3) | Q 4.2 |
 
-Extra answers, beyond the grid (Parts 5–6 of the handout): Q 3.6, Q 5.1, Q 6.1.
+Extra answers, not in the grid: Q 3.6, Q 5.1, Q 6.1.
 
-## Part 1 — Create and run your project
+## Part 1 - Create and run your project
 
-### Q 1.7 — What does the IDE do before and while starting the application?
-The IDE delegates the build to Maven: it resolves the dependencies, compiles `src/main/java` into `target/classes`, then starts a JVM with those classes and the dependency jars on the classpath and calls `main()`. Spring Boot then creates the context, runs auto-configuration and starts Tomcat; the IDE only streams the console and keeps a handle on the process.
+### Q 1.7 - What does the IDE do before and while starting the application?
+The IDE does not compile the code itself. It runs Maven, which downloads the missing dependencies and compiles src/main/java into target/classes. Then it starts a JVM with those classes and the dependency jars on the classpath, and calls main(). After that Spring Boot creates the context, runs the auto-configuration and starts Tomcat. The IDE only shows the console and keeps a handle on the process.
 
-### Q 1.8 — What does "Tomcat started on port 8080 (http) with context path '/'" mean? Who installed Tomcat?
-An embedded Tomcat runs inside the same JVM, listens on port 8080, and serves the application at the root path `/` (so `/programmers`, no prefix). Nobody installed it: `spring-boot-starter-webmvc` pulls the `tomcat-embed-*` jars and Spring Boot starts the server programmatically — no Tomcat service, no `CATALINA_HOME`.
+### Q 1.8 - What does "Tomcat started on port 8080 (http) with context path '/'" mean? Who installed Tomcat?
+Tomcat runs inside our own application, in the same JVM. It listens on port 8080, and the context path is the root, so an endpoint is simply http://localhost:8080/programmers with no prefix. Nobody installed Tomcat. It arrives as jar files (tomcat-embed-*) with spring-boot-starter-webmvc, and Spring Boot starts it from code. That is why we have no Tomcat service, no CATALINA_HOME and no webapps folder.
 
-### Q 1.10 — What is the role of @SpringBootApplication and of SpringApplication.run(...)?
-`@SpringBootApplication` combines `@SpringBootConfiguration` (a configuration class), `@EnableAutoConfiguration` (configures beans from the classpath and the properties, e.g. Tomcat and the DispatcherServlet) and `@ComponentScan` (scans `st2apr.workshop` and its sub-packages).
-`SpringApplication.run(...)` bootstraps the app: it creates and refreshes the ApplicationContext, which instantiates the beans and starts the server, then returns the context.
+### Q 1.10 - What is the role of @SpringBootApplication and SpringApplication.run(...)?
+@SpringBootApplication is three annotations in one. @SpringBootConfiguration says this class is a configuration class. @EnableAutoConfiguration asks Spring Boot to build the beans it finds on the classpath, for example Tomcat and the DispatcherServlet. @ComponentScan scans the package of this class and its sub-packages, which is the reason every class must live under st2apr.workshop.
+SpringApplication.run() starts everything: it creates the ApplicationContext, instantiates the beans, starts the server and returns the context.
 
-### Q 1.11 — After each code change you must restart the application, otherwise the change is not visible. Why?
-The JVM loads a class once and never re-reads the `.class` file, so new bytecode requires a new JVM. The Spring context is also built once at startup (singletons instantiated, routes registered), so a new `@GetMapping` would not even be known. Hence: compile → new JVM → new context.
+### Q 1.11 - After each code change you must restart. Why?
+A class is loaded once by the JVM and the .class file is not read again, so new code needs a new JVM. The Spring context is also built once at startup, and the routes are registered at that moment. A new @GetMapping would not be known. The cycle is always compile, new JVM, new context.
 
-## Part 2 — Your first endpoint
+## Part 2 - Your first endpoint
 
-### Q 2.3 — Which annotations do you need on the class and on the method?
-`@RestController` on the class: the returned value is written to the HTTP response body, as JSON via Jackson. `@GetMapping("/programmers")` on the method binds `GET /programmers` to it.
-Under the hood: at startup `RequestMappingHandlerMapping` registers the route; at each request `DispatcherServlet` looks it up and invokes the method.
+### Q 2.3 - Which annotations do you need on the class and on the method?
+@RestController on the class means the returned value goes into the HTTP response body as JSON. @GetMapping("/programmers") on the method links GET /programmers to it. When the application starts, RequestMappingHandlerMapping registers the route, and each request is sent to the method by the DispatcherServlet.
 
-### Q 2.4 — Why is putting the code in the main method a bad idea?
-`main()` only bootstraps the application. Code placed there has no routing (one URL at best), cannot be tested without starting the whole app, mixes concerns (it violates the single responsibility), and every new endpoint would mean editing and restarting the entry point.
+### Q 2.4 - Why is putting the code in the main method a bad idea?
+main() should only start the application. Code in that method has no routing, so we could expose one URL at most, we could not test it without starting the whole application, and we would mix the startup with a feature. It also violates the single responsibility.
 
-### Q 2.7 — Your method returns Java objects, yet the browser shows JSON. Who did the conversion, and when?
-Spring Boot's HTTP message converters, with Jackson behind them: `MappingJackson2HttpMessageConverter` serialises the returned `List<Programmer>` when the response is written, using the getters of the objects.
+### Q 2.7 - Your method returns Java objects, yet the browser shows JSON. Who did the conversion, and when?
+Jackson does it. Spring Boot has HTTP message converters, and MappingJackson2HttpMessageConverter writes the returned List<Programmer> as JSON when the response is sent. It uses the getters of the class, so a field without a getter does not appear in the JSON.
 
-## Part 3 — Persistence: MariaDB, JPA and the layered architecture
+## Part 3 - Persistence with JPA and MariaDB
 
-### Q 3.1 — Before configuring anything, restart: what is Spring Boot trying to do that it could not?
-It fails with `Failed to configure a DataSource: 'url' attribute is not specified and no embedded datasource could be configured`. Adding the starter put `DataSourceAutoConfiguration` and Hibernate on the classpath, and they immediately try to build a connection pool — but nobody told them where the database is. A starter is not just a jar: it activates a whole subsystem through auto-configuration, while the configuration itself (URL, credentials) stays our responsibility.
+### Q 3.1 - Before configuring anything, restart: what is Spring Boot trying to do that it could not?
+It fails with "Failed to configure a DataSource: 'url' attribute is not specified and no embedded datasource could be configured". The starter put DataSourceAutoConfiguration and Hibernate on the classpath, and they try to build a connection pool when the application starts. Nobody told them where the database is. So a starter is not just a jar: it activates a subsystem, but the configuration is still ours to write.
 
-### Q 3.2 — Where does `jakarta.persistence` come from? Which dependency? Why not `javax`?
-It is the Jakarta Persistence API, brought transitively by `spring-boot-starter-data-jpa`. Since Jakarta EE 9 the `javax.*` packages were renamed to `jakarta.*`, and Spring Boot 3 (and 4) use the Jakarta namespace — so tutorials that import `javax.persistence` target Spring Boot 2.x.
+### Q 3.2 - Where does jakarta.persistence come from? Which dependency? Why not javax?
+It is the Jakarta Persistence API, brought by spring-boot-starter-data-jpa. The packages were renamed from javax to jakarta with Jakarta EE 9. Spring Boot 3 and 4 use jakarta, so tutorials that import javax.persistence are for Spring Boot 2.
 
-### Q 3.3 — Difference between the POJO and the entity? Which table and columns for `lastName` and `favoriteBook`?
-The POJO is a plain class; the entity is mapped to a table and managed by Hibernate (its state is tracked, it can be persisted, merged, deleted). `lastName` maps to `programmer.last_name` and `favoriteBook` to `programmer.favorite_book` through the default physical naming strategy (camelCase → snake_case). No `@Table` is needed because the table name defaults to the entity name (`Programmer` → `programmer`), and no `@Column(name = ...)` because the column name defaults to the attribute name.
+### Q 3.3 - Difference between the POJO and the entity? Which table and columns for lastName and favoriteBook?
+The POJO is a normal class. The entity is the same class with JPA annotations, and Hibernate manages it: it tracks its state and can save or delete it. lastName goes to the column last_name and favoriteBook to favorite_book, because the default naming strategy converts camelCase to snake_case. We do not need @Table because the table name defaults to the class name in lowercase, Programmer becomes programmer. We do not need @Column(name = ...) because the column name defaults to the attribute name.
 
-### Q 3.4 — The repository interface has no body and no implementation. Where do `findAll()`, `save()`… come from?
-They are declared by `JpaRepository`. At startup Spring Data scans the interface, generates a proxy that implements it (delegating to `SimpleJpaRepository`), and registers it as a bean — that is the object injected into the service.
+### Q 3.4 - The repository interface has no body. Where do findAll() and save() come from?
+They are declared in JpaRepository. At startup Spring Data scans the interface and creates a proxy that implements it, then registers it as a bean. That proxy is what gets injected in the service, so we never write the implementation.
 
-### Q 3.5 — What does `@Service` bring? Why constructor injection instead of `@Autowired` on a field?
-`@Service` is a specialisation of `@Component`: it declares a bean and documents the intent (business layer) — unlike `@RestController` (web layer, `@Controller` + `@ResponseBody`) and `@Repository` (persistence, with exception translation). Constructor injection makes the dependency `final` and mandatory, keeps it visible in the signature, and lets a test pass a fake without Spring; a field `@Autowired` hides the dependency and prevents `final`.
+### Q 3.5 - What does @Service bring? Why constructor injection?
+@Service is a @Component with a meaning: this class is the business layer. @RestController is the web layer and @Repository is the persistence layer, with exception translation. Constructor injection is better because the field can be final, the dependency is visible in the constructor, and a test can pass a fake object. With @Autowired on a field the dependency is hidden and cannot be final.
 
-### Q 3.6 — Path of a request; which layer must never know HTTP? Which must never write SQL?
-`GET /programmers/3` → `ProgrammerController.getProgrammer(3)` → `ProgrammerService.findById(3)` → `ProgrammerRepository.findById(3)` → Hibernate → MariaDB, then back the same way. The **service** and the **repository** must never know about HTTP; the **controller** and the **service** must never write SQL.
+### Q 3.6 - Path of a request; which layer must never know HTTP? Which must never write SQL?
+GET /programmers/3 calls ProgrammerController.getProgrammer(3), then ProgrammerService.findById(3), then ProgrammerRepository.findById(3), then Hibernate and MariaDB, and the result comes back the same way. The service and the repository must never know about HTTP. The controller and the service must never write SQL.
 
-## Part 4 — Full CRUD
+## Part 4 - Full CRUD
 
-### Q 4.1 — PUT vs PATCH; which one fits here? *(handout Q 4.2)*
-`PUT` replaces the whole representation of the resource: sending the same request twice leaves the server in the same state (idempotent). `PATCH` modifies only part of it. The client sends the complete programmer, so `PUT` is the right verb here — see `ProgrammerController.updateProgrammer`, which takes the full object in the body and overwrites every field.
+### Q 4.1 - PUT vs PATCH, which one fits here? (handout Q 4.2)
+PUT replaces the whole resource. Sending the same request twice gives the same result, so it is idempotent. PATCH changes only the fields that are sent. In our case the client sends the complete programmer, so PUT is the right verb. ProgrammerController.updateProgrammer expects the full object in the body.
 
-### Q 4.2 — `@Transactional`: on which methods, what does it do, why does it matter most for update? *(handout Q 4.3)*
-On the service methods that write and may touch several rows (`create`, `update`, `delete`) — not on the read-only finders, which Spring Data already runs in a read-only transaction. It opens a transaction around the method, commits on success and rolls back on a runtime exception. It matters most for **update** because that method reads then writes: `ProgrammerService.update` first calls `findById`, then `save`. Without a transaction those two calls belong to two different units of work, so a concurrent change can slip in between them.
+### Q 4.2 - @Transactional: where, how, and why it matters for update (handout Q 4.3)
+I put it on the write methods of the service: create, update and delete. The read methods do not need it because Spring Data already runs them in a read-only transaction. It opens a transaction around the method, commits when the method ends normally and rolls back when a RuntimeException is thrown. It matters most for update because update reads first with findById and writes after with save. Without a transaction those two calls are not in the same unit of work.
 
-### Additional — advantages and risks of `@RequestMapping` at class level *(handout Q 4.1, not in the grading grid)*
-The base path is written once: changing it (or versioning it as `/api/v1`) touches one line, and each method only shows its own part of the path. The risk is that the full URL becomes invisible when reading a single method, and deep nesting (`/{id}/batches/{batchId}`) quickly becomes hard to follow.
+### Additional - advantages and risks of @RequestMapping at class level (handout Q 4.1)
+The base path is written once, so changing it or versioning it as /api/v1 touches one line and each method only shows its own part. The risk is that the full URL is invisible when you read one method, and deep paths like /{id}/batches/{batchId} become hard to follow.
 
-## Part 5 — REST done right
+## Part 5 - REST done right
 
-### Q 5.1 — Why is this RPC style rather than REST? Rewrite the four routes.
-RPC puts the action in the URL (`/getProgrammers`, `/addProgrammer`) and uses HTTP as a mere transport. REST exposes resources as plural nouns and lets the HTTP verb carry the action, with the identifier in the path:
+### Q 5.1 - Why is this RPC style rather than REST? Rewrite the four routes.
+RPC puts the action in the URL and uses HTTP only as a transport. REST exposes resources as plural nouns, and the HTTP verb carries the action, with the identifier in the path.
 
 | RPC route | REST route |
 |---|---|
-| `GET /getProgrammers` | `GET /programmers` |
-| `POST /addProgrammer` | `POST /programmers` |
-| `POST /deleteProgrammer/3` | `DELETE /programmers/3` |
-| `POST /modifyProgrammer/3` | `PUT /programmers/3` |
+| GET /getProgrammers | GET /programmers |
+| POST /addProgrammer | POST /programmers |
+| POST /deleteProgrammer/3 | DELETE /programmers/3 |
+| POST /modifyProgrammer/3 | PUT /programmers/3 |
 
-Our controller follows these rules: `@RequestMapping("/programmers")` at class level, one verb-specific mapping per action, and the id as a path variable (`@PathVariable`).
+Our controller follows these rules. @RequestMapping("/programmers") is on the class, each method has one verb, and the id is a path variable.
 
-### 5.2 — Status codes of the API
+### 5.2 - Status codes of the API
 
 | Situation | Status | Body |
 |---|---|---|
-| One or several programmers retrieved | `200 OK` | the programmer(s) as JSON |
-| The requested programmer does not exist | `404 Not Found` | `ProblemDetail` (RFC 9457) |
-| A programmer is created | `201 Created` | the created programmer + `Location` header |
-| A programmer is updated | `200 OK` | the updated programmer |
-| A programmer is deleted | `204 No Content` | none |
-| Update or deletion of a programmer that does not exist | `404 Not Found` | `ProblemDetail` |
-| Invalid data sent by the client (e.g. empty last name) | `400 Bad Request` | `ProblemDetail` (Part 6.4 validation) |
+| One or several programmers retrieved | 200 OK | the programmers as JSON |
+| The programmer does not exist | 404 Not Found | ProblemDetail (RFC 9457) |
+| A programmer is created | 201 Created | the programmer and a Location header |
+| A programmer is updated | 200 OK | the updated programmer |
+| A programmer is deleted | 204 No Content | none |
+| Update or deletion of an unknown id | 404 Not Found | ProblemDetail |
+| Invalid data, for example an empty last name | 400 Bad Request | ProblemDetail |
 
-## Part 6 — Clean error handling
+## Part 6 - Clean error handling
 
-### Q 6.1 — What did you gain? What should an error response never contain?
-Handling "not found" once in `@RestControllerAdvice` means: the controllers stay thin (no `if`, no `ResponseEntity.notFound()`), a new error type costs one method instead of an edit in every endpoint, every client receives the same shape (RFC 9457 `ProblemDetail`), and the status code is decided in a single place.
-An error response must never contain a stack trace, the SQL statement or the database exception, internal class names or server paths — those belong to the logs. The client gets a short, readable message ("Programmer 999 not found"), nothing that maps the internals of the server.
-## Reflection — what actually slowed me down
+### Q 6.1 - What did you gain? What should an error response never contain?
+Handling "not found" once in @RestControllerAdvice keeps the controllers short: no if and no ResponseEntity.notFound() in the controller. A new error type costs one method in the advice instead of a change in every endpoint, and every client gets the same shape, a ProblemDetail. The status code is decided in one place.
+An error response must never contain a stack trace, the SQL statement, the database exception, internal class names or server paths. Those belong in the logs. The client gets a short message like "Programmer 999 not found".
 
-Three things cost me real time in this workshop.
+## Reflection
 
-My IDE kept showing `List.of` and then `org.springframework` in red while Maven compiled the same code without complaining. IntelliJ had decided the language level was 5, and the Maven wrapper was on 3.10, which its importer could not load. I spent more time on the tooling than on the code.
+Tooling was the first problem. IntelliJ showed List.of and org.springframework in red while Maven compiled the same code without error. The module language level was 5, and the Maven wrapper was on 3.10, which the IDE could not import. I lost more time there than on the code itself.
 
-My first `ProgrammerController` looked plausible and did nothing: I had put `@RequestBody` on a method without `@PostMapping`, and `@RequestMapping` on the find-by-id method, so `GET /programmers/1` returned 404 while `GET /programmers?id=1` returned the whole list. Seeing it in the browser made the difference between "an annotation" and "a route" concrete.
+The second problem was my first controller. It looked correct, but GET /programmers/1 returned 404 and GET /programmers?id=1 returned the whole list, because I put @RequestBody on a method without @PostMapping and used @RequestMapping for the find by id. Seeing it in the browser made the idea of a route clear for me.
 
-I also did not see why the no-argument constructor was required until I understood that Hibernate builds an empty object and fills it field by field. After that the rule stopped feeling arbitrary.
+The no-argument constructor was also strange until I understood that Hibernate builds an empty object and then fills the fields one by one.
 
-The part I am still least comfortable with is `@Transactional`: I can say what it does, but I have not triggered a real rollback to watch it happen.
+@Transactional is the part I am still not sure about. I know what it should do, but I have not seen a rollback happen yet.
