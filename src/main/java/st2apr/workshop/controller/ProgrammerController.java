@@ -1,5 +1,6 @@
 package st2apr.workshop.controller;
 
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,7 +38,7 @@ public class ProgrammerController {
     }
 
     @PostMapping
-    public ResponseEntity<Programmer> createProgrammer(@RequestBody Programmer programmer) {
+    public ResponseEntity<Programmer> createProgrammer(@Valid @RequestBody Programmer programmer) {
         Programmer saved = programmerService.create(programmer);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")

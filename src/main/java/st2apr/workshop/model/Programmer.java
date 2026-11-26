@@ -5,6 +5,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.PositiveOrZero;
 
 import java.math.BigDecimal;
 
@@ -15,15 +17,19 @@ public class Programmer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "must not be blank")
     @Column(nullable = false, length = 100)
     private String lastName;
 
+    @NotBlank(message = "must not be blank")
     @Column(nullable = false, length = 100)
     private String firstName;
 
     private String address;
     private String expertiseLanguage;
     private String favoriteBook;
+
+    @PositiveOrZero(message = "must be zero or positive")
     private BigDecimal salary;
 
     protected Programmer() {

@@ -83,3 +83,9 @@ Our controller follows these rules: `@RequestMapping("/programmers")` at class l
 | A programmer is deleted | `204 No Content` | none |
 | Update or deletion of a programmer that does not exist | `404 Not Found` | `ProblemDetail` |
 | Invalid data sent by the client (e.g. empty last name) | `400 Bad Request` | `ProblemDetail` (Part 6.4 validation) |
+
+## Part 6 — Clean error handling
+
+### Q 6.1 — What did you gain? What should an error response never contain?
+Handling "not found" once in `@RestControllerAdvice` means: the controllers stay thin (no `if`, no `ResponseEntity.notFound()`), a new error type costs one method instead of an edit in every endpoint, every client receives the same shape (RFC 9457 `ProblemDetail`), and the status code is decided in a single place.
+An error response must never contain a stack trace, the SQL statement or the database exception, internal class names or server paths — those belong to the logs. The client gets a short, readable message ("Programmer 999 not found"), nothing that maps the internals of the server.
